@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniraX AI - Testing Mode</title>
+    
+    <link rel="icon" href="https://replit.com/public/images/favicon.ico" type="image/x-icon">
+
+    <style>
+        /* === Professional UI (AniraX Gold & Black) === */
+        :root {
+            --bg-color: #0c0c0c;
+            --text-color: #f1f1f1;
+            --gold-primary: #ffc107;
+            --gold-hover: #e0a800;
+            --chat-bg: #1a1a1a;
+            --glass-bg: rgba(255, 193, 7, 0.05);
+            --border-color: rgba(255, 193, 7, 0.2);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-color; font-family: 'Poppins', 'Segoe UI', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* === Loading Screen === */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bg-color); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 999;
+            animation: fadeOut 1.5s forwards; animation-delay: 2s;
+        }
+        #loading-logo {
+            width: 120px; height: 120px;
+            background: url('https://replit.com/public/images/replit_logo_only.svg') no-repeat center center;
+            background-size: contain; filter: drop-shadow(0 0 10px var(--gold-primary));
+        }
+        #loading-text { color: var(--gold-primary); font-size: 24px; font-weight: bold; margin-top: 20px; }
+
+        @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+
+        /* === Header === */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 25px; border-bottom: 1px solid var(--border-color);
+            background: var(--glass-bg); backdrop-filter: blur(10px);
+        }
+        .logo-group { display: flex; align-items: center; gap: 10px; }
+        .logo { width: 40px; height: 40px; background: url('https://replit.com/public/images/replit_logo_only.svg') no-repeat center center; background-size: contain; }
+        .app-name { font-size: 22px; font-weight: bold; color: var(--gold-primary); }
+        .status { font-size: 12px; color: #888; background: #222; padding: 3px 8px; border-radius: 10px; }
+
+        /* === Main Chat & History Container === */
+        #main-container { flex: 1; display: flex; overflow: hidden; }
+        
+        /* === History Sidebar === */
+        #history-sidebar {
+            width: 250px; background-color: var(--chat-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex; flex-direction: column; padding: 20px 10px;
+            transform: translateX(0); transition: transform 0.3s ease;
+        }
+        #history-sidebar.collapsed { transform: translateX(-250px); width: 0; padding: 0; }
+        .history-header { font-size: 14px; color: #888; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        #history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+        .history-item {
+            padding: 8px; border-radius: 5px; cursor: pointer; transition: background 0.2s;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px;
+        }
+        .history-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--gold-primary); }
+
+        /* === Chat Window === */
+        #chat-window { flex: 1; display: flex; flex-direction: column; padding: 25px; overflow-y: auto; gap: 20px; }
+        .message-row { display: flex; max-width: 80%; gap: 10px; align-items: flex-start; }
+        .user-row { align-self: flex-end; flex-direction: row-reverse; }
+        .ai-row { align-self: flex-start; }
+        
+        .avatar { width: 35px; height: 35px; border-radius: 50%; background-size: contain; background-repeat: no-repeat; background-position: center; }
+        .user-avatar { background-image: url('https://replit.com/public/images/user_avatar.svg'); border: 2px solid #555; }
+        .ai-avatar { background-image: url('https://replit.com/public/images/replit_logo_only.svg'); border: 2px solid var(--gold-primary); }
+        
+        .bubble { padding: 12px 18px; border-radius: 15px; font-size: 16px; line-height: 1.5; position: relative; }
+        .user-bubble { background: #333; color: white; border-bottom-right-radius: 5px; }
+        .ai-bubble { background: var(--chat-bg); color: #ddd; border-top-left-radius: 5px; border: 1px solid var(--border-color); }
+        
+        .typing-bubble { color: var(--gold-primary); font-style: italic; }
+
+        /* === Input Area === */
+        #input-area {
+            display: flex; align-items: center; gap: 15px; padding: 15px 25px;
+            border-top: 1px solid var(--border-color); background: var(--glass-bg); backdrop-filter: blur(10px);
+        }
+        #chat-input {
+            flex: 1; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--border-color);
+            background: #222; color: white; font-size: 16px; outline: none; transition: border-color 0.2s;
+        }
+        #chat-input:focus { border-color: var(--gold-primary); }
+        #send-btn {
+            background-color: var(--gold-primary); color: #111; border: none;
+            width: 45px; height: 45px; border-radius: 50%; font-size: 20px;
+            cursor: pointer; transition: background 0.2s; display: flex; justify-content: center; align-items: center;
+        }
+        #send-btn:hover { background-color: var(--gold-hover); }
+
+        /* === Professional UI Toggles === */
+        #toggle-history {
+            background: none; border: 1px solid var(--border-color); color: #888;
+            padding: 5px 12px; border-radius: 20px; cursor: pointer; transition: color 0.2s, border-color 0.2s;
+        }
+        #toggle-history:hover { color: white; border-color: #555; }
+
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div id="loading-logo"></div>
+        <div id="loading-text">AniraX AI</div>
+    </div>
+
+    <header>
+        <div class="logo-group">
+            <button id="toggle-history">History</button>
+            <div class="logo"></div>
+            <div class="app-name">AniraX <span style="font-weight:300;">AI</span></div>
+            <span class="status">Test Mode</span>
+        </div>
+        <div class="logo-group">
+            <div class="avatar user-avatar" style="border:1px solid #333; width:30px; height:30px;"></div>
+            <span style="font-size:14px; color:#aaa;">Local User</span>
+        </div>
+    </header>
+
+    <div id="main-container">
+        <div id="history-sidebar">
+            <div class="history-header">Recents</div>
+            <div id="history-list">
+                </div>
+        </div>
+
+        <div id="chat-window">
+            <div class="message-row ai-row">
+                <div class="avatar ai-avatar"></div>
+                <div class="bubble ai-bubble">
+                    Hello! I'm AniraX AI. This is a local test mode. How can I help you?
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="input-area">
+        <input type="text" id="chat-input" placeholder="Type your question...">
+        <button id="send-btn">➤</button>
+    </div>
+
+    <script>
+        // === DeepSeek Test Config ===
+        const API_KEY = "sk-c522f9efbc45490488bbfb14abec0bf5"; // Paper Testing Key
+        
+        // === UI Elements ===
+        const chatWindow = document.getElementById('chat-window');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const historyList = document.getElementById('history-list');
+        const sidebar = document.getElementById('history-sidebar');
+        const toggleHistoryBtn = document.getElementById('toggle-history');
+
+        // Local Chat History Array
+        let chatHistory = [];
+
+        // Toggle History Sidebar
+        toggleHistoryBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+
+        // Add User Message to Chat
+        function addUserMessage(message) {
+            const row = document.createElement('div');
+            row.className = 'message-row user-row';
+            row.innerHTML = `<div class="avatar user-avatar"></div><div class="bubble user-bubble">${message}</div>`;
+            chatWindow.appendChild(row);
+            chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll
+        }
+
+        // Add AI Message to Chat
+        function addAIMessage(message) {
+            // Remove typing bubble first
+            const typing = document.querySelector('.typing-bubble-row');
+            if (typing) typing.remove();
+
+            const row = document.createElement('div');
+            row.className = 'message-row ai-row';
+            row.innerHTML = `<div class="avatar ai-avatar"></div><div class="bubble ai-bubble">${message}</div>`;
+            chatWindow.appendChild(row);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // Add Typing Bubble
+        function addTypingBubble() {
+            const row = document.createElement('div');
+            row.className = 'message-row ai-row typing-bubble-row';
+            row.innerHTML = `<div class="avatar ai-avatar"></div><div class="bubble ai-bubble typing-bubble">Thinking...</div>`;
+            chatWindow.appendChild(row);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // Add To Local History List
+        function addToHistory(question) {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerText = question;
+            historyList.appendChild(item);
+            
+            // Limit history to 10 items
+            if (historyList.children.length > 10) {
+                historyList.removeChild(historyList.firstChild);
+            }
+        }
+
+        // Call DeepSeek API
+        async function askDeepSeek(question) {
+            addTypingBubble();
+
+            try {
+                const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek-chat",
+                        messages: [{role: "user", content: question}]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const aiResponse = data.choices[0].message.content;
+                addAIMessage(aiResponse);
+            } catch (error) {
+                console.error("DeepSeek Error:", error);
+                addAIMessage(`Error: I couldn't reach DeepSeek. Please check your API key and connection. (${error.message})`);
+            }
+        }
+
+        // Send Message Function
+        function sendMessage() {
+            const question = chatInput.value.trim();
+            if (question === "") return;
+
+            addUserMessage(question);
+            addToHistory(question); // Store in local history
+            askDeepSeek(question);
+            chatInput.value = ""; // Clear input
+        }
+
+        // Event Listeners
+        sendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+    </script>
+</body>
+  </html>
+  
